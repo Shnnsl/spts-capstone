@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supervisor Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="supervisor-page">
+
+  <div class="supervisor-container">
+    <a class="nav-link" href="index.html">← Back to Home</a>
+
+    <header class="supervisor-header">
+      <div>
+        <h1>Supervisor Dashboard</h1>
+        <p>Review downtime events, approval queue, and supervisor messages</p>
+      </div>
+
+      <div class="supervisor-actions">
+        <button onclick="loadSupervisorDashboard()">Refresh</button>
+      </div>
+    </header>
+
+    <section class="supervisor-kpi-grid">
+      <div class="supervisor-kpi-card urgent">
+        <span>Pending Approvals</span>
+        <strong id="supervisorPendingCount">0</strong>
+        <p>Events requiring supervisor review</p>
+      </div>
+
+      <div class="supervisor-kpi-card">
+        <span>Messages</span>
+        <strong id="supervisorMessageCount">0</strong>
+        <p>Supervisor alerts and notifications</p>
+      </div>
+
+      <div class="supervisor-kpi-card">
+        <span>Longest Pending</span>
+        <strong id="longestPending">-- min</strong>
+        <p>Highest downtime duration awaiting review</p>
+      </div>
+    </section>
+
+    <section class="supervisor-grid">
+      <div class="supervisor-panel">
+        <h2>Approval Queue</h2>
+        <div id="pendingEvents"></div>
+      </div>
+
+      <div class="supervisor-panel">
+        <h2>Supervisor Messages</h2>
+        <div id="supervisorMessages"></div>
+      </div>
+    </section>
+
+    <section class="supervisor-panel result-panel">
+      <h2>Action Result</h2>
+      <pre id="supervisorResult">No action performed yet.</pre>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

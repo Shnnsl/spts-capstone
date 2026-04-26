@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manager Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="manager-page">
+
+  <div class="manager-container">
+    <a class="nav-link" href="index.html">← Back to Home</a>
+
+    <header class="manager-header">
+      <div>
+        <h1>Manager Dashboard</h1>
+        <p>Decision view for production performance, downtime, and OEE</p>
+      </div>
+      <button onclick="loadManagerDashboard()">Refresh Dashboard</button>
+    </header>
+
+    <section class="manager-kpi-grid">
+      <div class="manager-kpi-card oee-focus">
+        <span>Overall OEE</span>
+        <strong id="managerOee">-- %</strong>
+        <p>Current performance score</p>
+      </div>
+
+      <div class="manager-kpi-card">
+        <span>Total Downtime</span>
+        <strong id="managerDowntime">0 min</strong>
+        <p>Across monitored lines</p>
+      </div>
+
+      <div class="manager-kpi-card">
+        <span>Pending Approvals</span>
+        <strong id="managerPending">0</strong>
+        <p>Needs supervisor review</p>
+      </div>
+
+      <div class="manager-kpi-card">
+        <span>Highest Risk Line</span>
+        <strong id="riskLine">--</strong>
+        <p>Based on downtime and pending approvals</p>
+      </div>
+    </section>
+
+    <section class="manager-metrics-grid">
+      <div class="manager-panel">
+        <h2>OEE Breakdown</h2>
+
+        <div class="manager-bar-row">
+          <span>Availability</span>
+          <strong id="managerAvailability">--%</strong>
+        </div>
+        <div class="manager-bar-track">
+          <div class="manager-bar-fill availability-fill" id="managerAvailabilityBar"></div>
+        </div>
+
+        <div class="manager-bar-row">
+          <span>Performance</span>
+          <strong id="managerPerformance">--%</strong>
+        </div>
+        <div class="manager-bar-track">
+          <div class="manager-bar-fill performance-fill" id="managerPerformanceBar"></div>
+        </div>
+
+        <div class="manager-bar-row">
+          <span>Quality</span>
+          <strong id="managerQuality">--%</strong>
+        </div>
+        <div class="manager-bar-track">
+          <div class="manager-bar-fill quality-fill" id="managerQualityBar"></div>
+        </div>
+      </div>
+
+      <div class="manager-panel insight-panel">
+        <h2>Management Insight</h2>
+        <p id="managerInsight">Load dashboard data to view current insight.</p>
+      </div>
+    </section>
+
+    <section class="manager-panel">
+      <h2>Line Comparison</h2>
+      <div id="lineComparison"></div>
+    </section>
+
+    <section class="manager-panel">
+      <h2>Downtime Reason Summary</h2>
+      <div id="reasonSummary"></div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

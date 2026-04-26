@@ -3,8 +3,17 @@ from typing import Optional, List
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="SPTS API", version="2.2.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # -----------------------------
 # In-memory storage
@@ -91,8 +100,8 @@ class OEEOutput(BaseModel):
     performance: float
     quality: float
     oee: float
+    oee_percent: float
     runtime_minutes: float
-
 
 class SupervisorMessage(BaseModel):
     message_id: int
@@ -400,12 +409,13 @@ def calculate_oee(payload: OEEInput, x_user: Optional[str] = Header(default=None
     oee = availability * performance * quality
 
     return OEEOutput(
-        availability=round(availability, 4),
-        performance=round(performance, 4),
-        quality=round(quality, 4),
-        oee=round(oee, 4),
-        runtime_minutes=round(runtime_minutes, 2),
-    )
+    availability=round(availability, 4),
+    performance=round(performance, 4),
+    quality=round(quality, 4),
+    oee=round(oee, 4),
+    oee_percent=round(oee * 100, 2),
+    runtime_minutes=round(runtime_minutes, 2),
+)
 
 
 @app.get("/lines/{line_id}/events", response_model=List[DowntimeEvent])

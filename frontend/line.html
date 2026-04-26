@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPTS Line UI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="line-page">
+
+  <aside class="line-sidebar">
+    <div class="brand">
+      <div class="brand-logo">SPTS</div>
+      <div class="brand-subtitle">Smart Production<br />Tracking System</div>
+    </div>
+Home</a>
+  <nav class="side-nav">
+  <a class="active" href="#dashboard">📊 Dashboard</a>
+  <a href="#downtime">⏱ Downtime</a>
+  <a href="#input">📝 Input</a>
+  <a href="#alerts">🚨 Alerts</a>
+  <a href="#settings">⚙️ Settings</a>
+</nav>
+  </aside>
+
+  <main class="line-main">
+
+    <section class="top-bar" id="dashboard">
+  <div class="top-card">
+    <span>Line</span>
+    <select id="selectedLine" onchange="updateMachineOptions(); loadLineUI();">
+      <option value="Line1">Line 1</option>
+      <option value="Line2">Line 2</option>
+      <option value="Line3">Line 3</option>
+    </select>
+  </div>
+
+  <div class="top-card">
+    <span>Machine</span>
+    <select id="selectedMachine">
+      <option value="Packer1">Packer 1</option>
+      <option value="Mixer1">Mixer 1</option>
+      <option value="Filler1">Filler 1</option>
+    </select>
+  </div>
+
+  <div class="top-card">
+    <span>Shift</span>
+    <select id="selectedShift">
+      <option value="A">Shift A (06:00 - 14:00)</option>
+      <option value="B">Shift B (14:00 - 22:00)</option>
+      <option value="C">Shift C (22:00 - 06:00)</option>
+    </select>
+  </div>
+
+  <div class="top-card live-card">
+    <strong id="currentTime">--:--</strong>
+    <span>LIVE · Real-time</span>
+  </div>
+</section>
+
+    <section class="line-grid">
+
+      <div class="panel status-panel">
+        <div class="panel-title">Line Status</div>
+        <div class="status-large" id="lineStatus">
+  <span class="pulse-dot"></span>
+  RUNNING
+</div>
+        <div class="status-sub">Since 09:15 AM</div>
+      </div>
+
+      <div class="panel oee-panel">
+        <div class="panel-title">OEE</div>
+        <div class="oee-number" id="oeeDisplay">-- %</div>
+        <div class="progress-track">
+          <div class="progress-fill" id="oeeProgress"></div>
+        </div>
+        <div class="progress-labels">
+          <span>0%</span>
+          <span>100%</span>
+        </div>
+      </div>
+
+      <div class="panel target-panel">
+        <div class="panel-title">Target Progress</div>
+        <div class="target-number"><span>850</span> / 1000</div>
+        <div class="target-sub">85% of target</div>
+        <div class="progress-track">
+          <div class="progress-fill target-fill"></div>
+        </div>
+        <p>Remaining: 150 units</p>
+      </div>
+
+      <div class="panel kpi-bar-panel">
+  <div class="panel-title">Availability</div>
+  <div class="kpi-row">
+    <span>Line Runtime</span>
+    <strong id="availabilityValue">85%</strong>
+  </div>
+  <div class="kpi-track">
+    <div class="kpi-fill availability-fill" style="width: 85%;"></div>
+  </div>
+  <p>Shows how much planned time the line was actually running.</p>
+</div>
+
+      <div class="panel kpi-bar-panel">
+  <div class="panel-title">Performance</div>
+  <div class="kpi-row">
+    <span>Speed Efficiency</span>
+    <strong id="performanceValue">83%</strong>
+  </div>
+  <div class="kpi-track">
+    <div class="kpi-fill performance-fill" style="width: 83%;"></div>
+  </div>
+  <p>Compares actual production speed against the ideal rate.</p>
+</div>
+
+      <div class="panel kpi-bar-panel">
+  <div class="panel-title">Quality</div>
+  <div class="kpi-row">
+    <span>Good Product Rate</span>
+    <strong id="qualityValue">97%</strong>
+  </div>
+  <div class="kpi-track">
+    <div class="kpi-fill quality-fill" style="width: 97%;"></div>
+  </div>
+  <p>Shows the percentage of good units produced.</p>
+</div>
+
+      <div class="panel downtime-panel" id="downtime">
+  <div class="panel-title">Downtime Overview</div>
+  <div class="downtime-stats">
+    <div>
+      <strong id="downtime">0</strong>
+      <span>Total Minutes</span>
+    </div>
+    <div>
+      <strong id="totalEvents">0</strong>
+      <span>Total Events</span>
+    </div>
+    <div>
+      <strong id="pending">0</strong>
+      <span>Pending Approval</span>
+    </div>
+  </div>
+</div>
+
+<div class="panel last-event-panel">
+  <div class="panel-title danger">Last Downtime Event</div>
+  <div id="latestEventBox">
+    <p>No downtime event recorded yet.</p>
+  </div>
+</div>
+
+<div class="panel alerts-panel" id="alerts">
+  <div class="panel-title">Alerts</div>
+  <div id="alertsBox">
+    <p>No active alerts.</p>
+  </div>
+</div>
+
+<div class="panel input-panel" id="input">
+  <div class="panel-title">Quick Downtime Entry</div>
+
+ 
+
+  <label>Reason</label>
+  <select id="reason_code">
+    <option>Breakdown</option>
+    <option>Changeover</option>
+    <option>Material Shortage</option>
+    <option>Minor Stop</option>
+  </select>
+
+  <label>Downtime (Minutes)</label>
+  <input id="minutes" type="number" placeholder="Enter downtime duration" />
+
+  <button onclick="quickDowntime()">Record Downtime</button>
+
+  <pre id="lineResult"></pre>
+</div>
+
+</section>
+
+<footer class="line-footer">
+  <span id="lastUpdated">Last updated: --</span>
+  <span class="connected">Connected to server</span>
+</footer>
+
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
