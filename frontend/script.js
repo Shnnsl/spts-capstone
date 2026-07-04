@@ -214,9 +214,31 @@ function updateCurrentTime() {
 // -----------------------------
 // Supervisor Dashboard
 // -----------------------------
+let supervisorPendingEventsCache = [];
+let supervisorMessagesCache = [];
+let supervisorAllEventsCache = [];
+
 async function loadSupervisorDashboard() {
+  await loadSupervisorAllEvents();
   await loadPendingEvents();
   await loadSupervisorMessages();
+  await loadSupervisorOEE();
+  loadSupervisorActivityFeed();
+  updateSupervisorKPIs();
+}
+
+async function loadSupervisorAllEvents() {
+  try {
+    const response = await fetch(`${API_BASE}/downtime`, {
+      method: "GET",
+      headers: { "x-user": "supervisor1" }
+    });
+
+    supervisorAllEventsCache = await response.json();
+  } catch (error) {
+    supervisorAllEventsCache = [];
+    console.error("Supervisor all events error:", error);
+  }
 }
 
 async function loadPendingEvents() {
@@ -227,6 +249,7 @@ async function loadPendingEvents() {
     });
 
     const events = await response.json();
+    supervisorPendingEventsCache = events;
 
     const pendingCountEl = document.getElementById("supervisorPendingCount");
     const longestPendingEl = document.getElementById("longestPending");
@@ -240,8 +263,11 @@ async function loadPendingEvents() {
     }
 
     if (!events.length) {
-      document.getElementById("pendingEvents").innerHTML =
-        "<p style='color:#16a34a;font-weight:bold;'>✔ No pending approvals. All clear.</p>";
+      const pendingBox = document.getElementById("pendingEvents");
+      if (pendingBox) {
+        pendingBox.innerHTML =
+          "<p style='color:#22c55e;font-weight:bold;'>✔ No pending approvals. All clear.</p>";
+      }
       return;
     }
 
@@ -273,9 +299,12 @@ async function loadPendingEvents() {
     });
 
     html += "</table>";
-    document.getElementById("pendingEvents").innerHTML = html;
+
+    const pendingBox = document.getElementById("pendingEvents");
+    if (pendingBox) pendingBox.innerHTML = html;
   } catch (error) {
-    document.getElementById("supervisorResult").textContent = String(error);
+    const resultBox = document.getElementById("supervisorResult");
+    if (resultBox) resultBox.textContent = String(error);
   }
 }
 
@@ -287,11 +316,14 @@ async function approveEvent(eventId) {
     });
 
     const result = await response.json();
-    document.getElementById("supervisorResult").textContent = JSON.stringify(result, null, 2);
 
-    loadSupervisorDashboard();
+    const resultBox = document.getElementById("supervisorResult");
+    if (resultBox) resultBox.textContent = JSON.stringify(result, null, 2);
+
+    await loadSupervisorDashboard();
   } catch (error) {
-    document.getElementById("supervisorResult").textContent = String(error);
+    const resultBox = document.getElementById("supervisorResult");
+    if (resultBox) resultBox.textContent = String(error);
   }
 }
 
@@ -303,13 +335,17 @@ async function loadSupervisorMessages() {
     });
 
     const messages = await response.json();
+    supervisorMessagesCache = messages;
 
     const messageCountEl = document.getElementById("supervisorMessageCount");
     if (messageCountEl) messageCountEl.textContent = messages.length;
 
     if (!messages.length) {
-      document.getElementById("supervisorMessages").innerHTML =
-        "<p style='color:#64748b;'>No new alerts. System running normally.</p>";
+      const messageBox = document.getElementById("supervisorMessages");
+      if (messageBox) {
+        messageBox.innerHTML =
+          "<p style='color:#94a3b8;'>No new alerts. System running normally.</p>";
+      }
       return;
     }
 
@@ -326,9 +362,162 @@ async function loadSupervisorMessages() {
       `;
     });
 
-    document.getElementById("supervisorMessages").innerHTML = html;
+    const messageBox = document.getElementById("supervisorMessages");
+    if (messageBox) messageBox.innerHTML = html;
   } catch (error) {
-    document.getElementById("supervisorResult").textContent = String(error);
+    const resultBox = document.getElementById("supervisorResult");
+    if (resultBox) resultBox.textContent = String(error);
+  }
+}
+
+async function loadSupervisorOEE() {
+  try {
+    const response = await fetch(`${API_BASE}/oee/calculate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-user": "supervisor1"
+      },
+      body: JSON.stringify({
+        planned_production_minutes: 480,
+        downtime_minutes: 60,
+        ideal_cycle_time: 0.5,
+        total_count: 700,
+        good_count: 680
+      })
+    });
+
+    const result = await response.json();
+
+    const oeePercent = result.oee_percent;
+    const availabilityPercent = Math.round(result.availability * 100);
+    const performancePercent = Math.round(result.performance * 100);
+    const qualityPercent = Math.round(result.quality * 100);
+
+    const supervisorOee = document.getElementById("supervisorOee");
+    const availabilityValue = document.getElementById("supervisorAvailability");
+    const performanceValue = document.getElementById("supervisorPerformance");
+    const qualityValue = document.getElementById("supervisorQuality");
+
+    const availabilityBar = document.getElementById("supervisorAvailabilityBar");
+    const performanceBar = document.getElementById("supervisorPerformanceBar");
+    const qualityBar = document.getElementById("supervisorQualityBar");
+
+    if (supervisorOee) supervisorOee.textContent = `${oeePercent}%`;
+    if (availabilityValue) availabilityValue.textContent = `${availabilityPercent}%`;
+    if (performanceValue) performanceValue.textContent = `${performancePercent}%`;
+    if (qualityValue) qualityValue.textContent = `${qualityPercent}%`;
+
+    if (availabilityBar) availabilityBar.style.width = `${Math.min(availabilityPercent, 100)}%`;
+    if (performanceBar) performanceBar.style.width = `${Math.min(performancePercent, 100)}%`;
+    if (qualityBar) qualityBar.style.width = `${Math.min(qualityPercent, 100)}%`;
+
+    if (supervisorOee) {
+      if (oeePercent >= 85) {
+        supervisorOee.style.color = "#22c55e";
+      } else if (oeePercent >= 60) {
+        supervisorOee.style.color = "#f59e0b";
+      } else {
+        supervisorOee.style.color = "#ef4444";
+      }
+    }
+  } catch (error) {
+    console.error("Supervisor OEE error:", error);
+  }
+}
+
+function loadSupervisorActivityFeed() {
+  const activityFeed = document.getElementById("supervisorActivityFeed");
+  if (!activityFeed) return;
+
+  const activities = [];
+
+  supervisorPendingEventsCache.slice(0, 3).forEach(event => {
+    activities.push(
+      `PLC/Line event ${event.event_id} from ${event.machine_id} is waiting for supervisor approval.`
+    );
+  });
+
+  const recentlyApproved = supervisorAllEventsCache
+    .filter(event => event.status === "Approved")
+    .slice(-2);
+
+  recentlyApproved.forEach(event => {
+    activities.push(
+      `Event ${event.event_id} on ${event.line_id} was approved and synchronized with reporting.`
+    );
+  });
+
+  if (!activities.length) {
+    activities.push("System waiting for new downtime events.");
+    activities.push("Supervisor workflow is synchronized with current dashboard data.");
+  }
+
+  let html = "";
+
+  activities.forEach(activity => {
+    html += `
+      <div class="activity-item">
+        ${activity}
+      </div>
+    `;
+  });
+
+  activityFeed.innerHTML = html;
+}
+
+function updateSupervisorKPIs() {
+  const openDowntimeEl = document.getElementById("openDowntimeMinutes");
+  const avgApprovalEl = document.getElementById("avgApprovalTime");
+  const waitingOverThirtyEl = document.getElementById("waitingOverThirty");
+  const approvedEventsEl = document.getElementById("approvedTodayCount");
+
+  const openDowntimeMinutes = supervisorPendingEventsCache.reduce(
+    (sum, event) => sum + (event.minutes || 0),
+    0
+  );
+
+  const waitingOverThirty = supervisorPendingEventsCache.filter(
+    event => (event.minutes || 0) > 30
+  ).length;
+
+  const approvedEvents = supervisorAllEventsCache.filter(
+    event => event.status === "Approved"
+  );
+
+  const approvedWithTimes = approvedEvents.filter(
+    event => event.created_at && event.approved_at
+  );
+
+  let avgApprovalMinutes = null;
+
+  if (approvedWithTimes.length) {
+    const totalApprovalMinutes = approvedWithTimes.reduce((sum, event) => {
+      const createdAt = new Date(event.created_at);
+      const approvedAt = new Date(event.approved_at);
+      const diffMinutes = (approvedAt - createdAt) / 60000;
+      return sum + Math.max(diffMinutes, 0);
+    }, 0);
+
+    avgApprovalMinutes = totalApprovalMinutes / approvedWithTimes.length;
+  }
+
+  if (openDowntimeEl) {
+    openDowntimeEl.textContent = `${Math.round(openDowntimeMinutes)} min`;
+  }
+
+  if (waitingOverThirtyEl) {
+    waitingOverThirtyEl.textContent = waitingOverThirty;
+  }
+
+  if (approvedEventsEl) {
+    approvedEventsEl.textContent = approvedEvents.length;
+  }
+
+  if (avgApprovalEl) {
+    avgApprovalEl.textContent = avgApprovalMinutes === null
+      ? "-- min"
+      : `${avgApprovalMinutes.toFixed(1)} min`;
   }
 }
 
@@ -357,11 +546,15 @@ async function loadManagerDashboard() {
   const totalPending = summaries.reduce((sum, line) => sum + (line.pending_events || 0), 0);
   const totalEvents = summaries.reduce((sum, line) => sum + (line.total_events || 0), 0);
 
-  document.getElementById("managerDowntime").textContent = `${totalDowntime} min`;
-  document.getElementById("managerPending").textContent = totalPending;
+  const managerDowntime = document.getElementById("managerDowntime");
+  const managerPending = document.getElementById("managerPending");
+  const riskLineEl = document.getElementById("riskLine");
+
+  if (managerDowntime) managerDowntime.textContent = `${totalDowntime} min`;
+  if (managerPending) managerPending.textContent = totalPending;
 
   const riskLine = getHighestRiskLine(summaries);
-  document.getElementById("riskLine").textContent = riskLine ? riskLine.line_id : "--";
+  if (riskLineEl) riskLineEl.textContent = riskLine ? riskLine.line_id : "--";
 
   await loadManagerOEE();
   renderLineComparison(summaries);
@@ -388,21 +581,31 @@ async function loadManagerOEE() {
 
     const result = await response.json();
 
-    document.getElementById("managerOee").textContent = `${result.oee_percent} %`;
+    const managerOee = document.getElementById("managerOee");
+    if (managerOee) managerOee.textContent = `${result.oee_percent} %`;
 
     const availabilityPercent = Math.round(result.availability * 100);
     const performancePercent = Math.round(result.performance * 100);
     const qualityPercent = Math.round(result.quality * 100);
 
-    document.getElementById("managerAvailability").textContent = `${availabilityPercent}%`;
-    document.getElementById("managerPerformance").textContent = `${performancePercent}%`;
-    document.getElementById("managerQuality").textContent = `${qualityPercent}%`;
+    const availabilityEl = document.getElementById("managerAvailability");
+    const performanceEl = document.getElementById("managerPerformance");
+    const qualityEl = document.getElementById("managerQuality");
 
-    document.getElementById("managerAvailabilityBar").style.width = `${Math.min(availabilityPercent, 100)}%`;
-    document.getElementById("managerPerformanceBar").style.width = `${Math.min(performancePercent, 100)}%`;
-    document.getElementById("managerQualityBar").style.width = `${Math.min(qualityPercent, 100)}%`;
+    if (availabilityEl) availabilityEl.textContent = `${availabilityPercent}%`;
+    if (performanceEl) performanceEl.textContent = `${performancePercent}%`;
+    if (qualityEl) qualityEl.textContent = `${qualityPercent}%`;
+
+    const availabilityBar = document.getElementById("managerAvailabilityBar");
+    const performanceBar = document.getElementById("managerPerformanceBar");
+    const qualityBar = document.getElementById("managerQualityBar");
+
+    if (availabilityBar) availabilityBar.style.width = `${Math.min(availabilityPercent, 100)}%`;
+    if (performanceBar) performanceBar.style.width = `${Math.min(performancePercent, 100)}%`;
+    if (qualityBar) qualityBar.style.width = `${Math.min(qualityPercent, 100)}%`;
   } catch (error) {
-    document.getElementById("managerOee").textContent = "Error";
+    const managerOee = document.getElementById("managerOee");
+    if (managerOee) managerOee.textContent = "Error";
   }
 }
 
@@ -418,6 +621,9 @@ function getHighestRiskLine(summaries) {
 }
 
 function renderLineComparison(summaries) {
+  const lineComparison = document.getElementById("lineComparison");
+  if (!lineComparison) return;
+
   let html = `
     <table class="manager-table">
       <tr>
@@ -457,10 +663,13 @@ function renderLineComparison(summaries) {
   });
 
   html += "</table>";
-  document.getElementById("lineComparison").innerHTML = html;
+  lineComparison.innerHTML = html;
 }
 
 function renderReasonSummary(summaries) {
+  const reasonSummary = document.getElementById("reasonSummary");
+  if (!reasonSummary) return;
+
   const reasons = {};
 
   summaries.forEach(line => {
@@ -471,7 +680,7 @@ function renderReasonSummary(summaries) {
   });
 
   if (Object.keys(reasons).length === 0) {
-    document.getElementById("reasonSummary").innerHTML = "<p>No downtime reasons available yet.</p>";
+    reasonSummary.innerHTML = "<p>No downtime reasons available yet.</p>";
     return;
   }
 
@@ -488,11 +697,12 @@ function renderReasonSummary(summaries) {
   });
 
   html += "</div>";
-  document.getElementById("reasonSummary").innerHTML = html;
+  reasonSummary.innerHTML = html;
 }
 
 function renderManagerInsight(summaries, totalPending, totalDowntime, totalEvents, riskLine) {
   const insight = document.getElementById("managerInsight");
+  if (!insight) return;
 
   if (!totalEvents) {
     insight.textContent =
@@ -540,4 +750,8 @@ window.addEventListener("load", () => {
 
   setInterval(loadLineUI, 5000);
   setInterval(updateCurrentTime, 1000);
+
+  if (document.getElementById("pendingEvents")) {
+    setInterval(loadSupervisorDashboard, 10000);
+  }
 });

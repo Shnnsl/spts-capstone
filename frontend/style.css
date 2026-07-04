@@ -828,45 +828,97 @@ body.manager-page {
 
 
 /* -----------------------------
-   Supervisor Dashboard
+   Supervisor Dashboard - Updated
 ----------------------------- */
 body.supervisor-page {
-
-  background: #eef2f7;
-  color: #111827;
+  background: #06111f;
+  color: #f8fafc;
 }
 
 .supervisor-container {
-  max-width: 1200px;
-  margin: 30px auto;
-  padding: 20px;
+  max-width: 1400px;
+  margin: 24px auto;
+  padding: 22px;
+}
+
+.supervisor-container .nav-link {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.supervisor-header,
+.supervisor-filter-bar,
+.supervisor-panel,
+.supervisor-kpi-card {
+  background: #0b1b2d;
+  border: 1px solid #1e3a5f;
+  border-radius: 16px;
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.18);
 }
 
 .supervisor-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
   border-left: 6px solid #f59e0b;
+  padding: 26px;
 }
 
 .supervisor-header h1 {
+  color: #ffffff;
   margin: 0;
+  font-size: 34px;
 }
 
 .supervisor-header p {
-  color: #6b7280;
-  margin-bottom: 0;
+  color: #94a3b8;
 }
 
 .supervisor-actions button {
-  max-width: 180px;
+  max-width: 220px;
+  background: #1f6feb;
+  border-radius: 10px;
 }
 
-.supervisor-kpi-grid {
+.supervisor-filter-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+  margin-top: 20px;
+  padding: 18px;
+}
+
+.supervisor-filter-bar label {
+  color: #94a3b8;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.supervisor-filter-bar select {
+  background: #07111f;
+  color: #ffffff;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+
+.supervisor-live-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #22c55e;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  background: #22c55e;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.supervisor-kpi-grid.enhanced {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
@@ -874,19 +926,24 @@ body.supervisor-page {
 }
 
 .supervisor-kpi-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 22px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
   border-left: 6px solid #1f6feb;
+  padding: 24px;
 }
 
 .supervisor-kpi-card.urgent {
   border-left-color: #ef4444;
 }
 
+.supervisor-kpi-card.warning {
+  border-left-color: #f59e0b;
+}
+
+.supervisor-kpi-card.success {
+  border-left-color: #22c55e;
+}
+
 .supervisor-kpi-card span {
-  color: #6b7280;
+  color: #94a3b8;
   font-weight: bold;
   text-transform: uppercase;
   font-size: 13px;
@@ -894,13 +951,96 @@ body.supervisor-page {
 
 .supervisor-kpi-card strong {
   display: block;
-  font-size: 34px;
+  font-size: 42px;
   margin-top: 10px;
+  color: #ffffff;
 }
 
 .supervisor-kpi-card p {
-  color: #6b7280;
-  margin-bottom: 0;
+  color: #cbd5e1;
+}
+
+/* OEE Snapshot */
+.supervisor-oee-panel {
+  margin-top: 22px;
+  border-left: 6px solid #22c55e;
+}
+
+.supervisor-oee-layout {
+  display: grid;
+  grid-template-columns: 0.8fr 1.6fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.supervisor-oee-main,
+.supervisor-kpi-bars {
+  background: #07111f;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.supervisor-oee-main span {
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.supervisor-oee-main strong {
+  display: block;
+  font-size: 64px;
+  color: #22c55e;
+  margin-top: 8px;
+}
+
+.supervisor-oee-main p {
+  color: #cbd5e1;
+}
+
+.supervisor-bar-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 0 8px;
+}
+
+.supervisor-bar-row span {
+  color: #cbd5e1;
+  font-weight: bold;
+}
+
+.supervisor-bar-row strong {
+  color: #ffffff;
+  font-size: 22px;
+}
+
+.supervisor-bar-track {
+  width: 100%;
+  height: 16px;
+  background: #1e293b;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.supervisor-bar-fill {
+  height: 100%;
+  width: 0%;
+  min-width: 8px;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+#supervisorAvailabilityBar {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+#supervisorPerformanceBar {
+  background: linear-gradient(90deg, #f59e0b, #facc15);
+}
+
+#supervisorQualityBar {
+  background: linear-gradient(90deg, #22c55e, #86efac);
 }
 
 .supervisor-grid {
@@ -910,77 +1050,100 @@ body.supervisor-page {
   margin-top: 22px;
 }
 
+.supervisor-grid.lower-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
 .supervisor-panel {
-  background: #ffffff;
-  border-radius: 14px;
   padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
 }
 
 .supervisor-panel h2 {
+  color: #ffffff;
   margin-top: 0;
 }
 
-.result-panel {
-  margin-top: 22px;
+.panel-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.supervisor-table {
-  width: 100%;
-  border-collapse: collapse;
+.panel-badge {
+  background: #07111f;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .supervisor-table th {
-  background: #111827;
-  color: white;
+  background: #07111f;
+  color: #f8fafc;
+}
+
+.supervisor-table td {
+  background: #0f172a;
+  color: #e2e8f0;
 }
 
 .supervisor-table td,
 .supervisor-table th {
-  padding: 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #334155;
+  padding: 13px;
 }
 
 .approve-btn {
-  background: #16a34a;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+  background: #22c55e;
+  color: #052e16;
+  font-weight: 800;
 }
 
-.approve-btn:hover {
-  background: #15803d;
+.message-card,
+.activity-item,
+#supervisorResult {
+  background: #07111f;
+  border: 1px solid #334155;
+  color: #cbd5e1;
 }
 
 .message-card {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
   border-left: 5px solid #f59e0b;
-  border-radius: 12px;
-  padding: 14px;
+  border-radius: 14px;
+  padding: 16px;
   margin-bottom: 12px;
 }
 
-.message-card strong {
-  display: block;
-  margin-bottom: 6px;
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.message-card p {
-  color: #4b5563;
-  margin: 4px 0;
+.activity-item {
+  border-left: 4px solid #22c55e;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+#supervisorResult {
+  max-height: 280px;
 }
 
 @media (max-width: 900px) {
-  .supervisor-header {
+  .supervisor-header,
+  .supervisor-oee-layout {
+    grid-template-columns: 1fr;
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .supervisor-kpi-grid,
-  .supervisor-grid {
+  .supervisor-filter-bar,
+  .supervisor-kpi-grid.enhanced,
+  .supervisor-grid,
+  .supervisor-grid.lower-grid {
     grid-template-columns: 1fr;
   }
-}       
+}

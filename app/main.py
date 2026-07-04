@@ -1,11 +1,13 @@
 from enum import Enum
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import Counter, defaultdict
+
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="SPTS API", version="2.2.0")
+app = FastAPI(title="SPTS API", version="2.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,14 +28,18 @@ supervisor_messages = []
 # -----------------------------
 users = {
     "operator1": {"role": "Operator"},
+    "operator2": {"role": "Operator"},
     "supervisor1": {"role": "Supervisor"},
+    "manager1": {"role": "Manager"},
     "admin1": {"role": "Admin"},
 }
 
 # -----------------------------
-# Business rule
+# Business rules
 # -----------------------------
 APPROVAL_LIMIT_MINUTES = 25
+STANDARD_SHIFT_MINUTES = 480
+DOWNTIME_COST_PER_MINUTE = 45
 
 
 # -----------------------------
@@ -70,6 +76,14 @@ class OEEInput(BaseModel):
     good_count: int = Field(..., ge=0)
 
 
+class PLCEventInput(BaseModel):
+    line_id: str = Field(default="Line1", min_length=1, max_length=20)
+    machine_id: str = Field(default="Packer1", min_length=1, max_length=20)
+    reason_code: str = Field(default="PLC_STOP", min_length=1, max_length=50)
+    minutes: float = Field(default=30, gt=0)
+    comments: Optional[str] = Field(default="Simulated PLC downtime event", max_length=250)
+
+
 # -----------------------------
 # Response models
 # -----------------------------
@@ -84,10 +98,12 @@ class DowntimeEvent(BaseModel):
     source: DowntimeSource
     comments: Optional[str] = ""
     created_by: str
+    created_at: datetime
     status: DowntimeStatus
     approval_required: bool
     notification_flag: bool
     approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
 
 
 class ApprovalResult(BaseModel):
@@ -103,6 +119,7 @@ class OEEOutput(BaseModel):
     oee_percent: float
     runtime_minutes: float
 
+
 class SupervisorMessage(BaseModel):
     message_id: int
     event_id: int
@@ -111,6 +128,8 @@ class SupervisorMessage(BaseModel):
     minutes: float
     message: str
     is_read: bool = False
+    created_at: datetime
+    read_at: Optional[datetime] = None
 
 
 class LineSummary(BaseModel):
@@ -121,6 +140,14 @@ class LineSummary(BaseModel):
     pending_events: int
     current_status: str
     latest_event: Optional[DowntimeEvent] = None
+
+
+class HealthStatus(BaseModel):
+    status: str
+    api_version: str
+    timestamp: datetime
+    stored_downtime_events: int
+    supervisor_messages: int
 
 
 # -----------------------------
@@ -159,10 +186,7 @@ def check_for_overlap(machine_id: str, start_time: datetime, end_time: datetime)
         if event.machine_id != machine_id:
             continue
 
-        existing_start = event.start_time
-        existing_end = event.end_time
-
-        overlap_exists = start_time < existing_end and end_time > existing_start
+        overlap_exists = start_time < event.end_time and end_time > event.start_time
 
         if overlap_exists:
             raise HTTPException(
@@ -192,6 +216,8 @@ def create_supervisor_message(event_id: int, line_id: str, machine_id: str, minu
             f"was recorded for {minutes} minutes and requires supervisor approval."
         ),
         is_read=False,
+        created_at=datetime.utcnow(),
+        read_at=None,
     )
 
     supervisor_messages.append(new_message)
@@ -200,8 +226,12 @@ def create_supervisor_message(event_id: int, line_id: str, machine_id: str, minu
 def mark_related_messages_as_read(event_id: int) -> None:
     for index, message in enumerate(supervisor_messages):
         if message.event_id == event_id and not message.is_read:
-            updated_message = message.model_copy(update={"is_read": True})
-            supervisor_messages[index] = updated_message
+            supervisor_messages[index] = message.model_copy(
+                update={
+                    "is_read": True,
+                    "read_at": datetime.utcnow(),
+                }
+            )
 
 
 def get_events_for_line(line_id: str) -> List[DowntimeEvent]:
@@ -229,22 +259,7 @@ def determine_line_status(line_events: List[DowntimeEvent]) -> str:
     return "Running / Reviewed"
 
 
-# -----------------------------
-# Routes
-# -----------------------------
-@app.get("/")
-def root():
-    return {"message": "SPTS API is running"}
-
-
-@app.post("/downtime", response_model=DowntimeEvent)
-def create_downtime_event(
-    payload: DowntimeCreate,
-    x_user: Optional[str] = Header(default=None)
-):
-    username = get_current_user(x_user)
-    require_role(username, ["Operator", "Supervisor", "Admin"])
-
+def create_event_from_downtime_payload(payload: DowntimeCreate, username: str) -> DowntimeEvent:
     validate_time_range(payload.start_time, payload.end_time)
     check_for_overlap(payload.machine_id, payload.start_time, payload.end_time)
 
@@ -255,10 +270,12 @@ def create_downtime_event(
     if approval_required:
         status = DowntimeStatus.pending
         approved_by = None
+        approved_at = None
         notification_flag = True
     else:
         status = DowntimeStatus.approved
         approved_by = "system"
+        approved_at = datetime.utcnow()
         notification_flag = False
 
     event = DowntimeEvent(
@@ -272,10 +289,12 @@ def create_downtime_event(
         source=payload.source,
         comments=payload.comments,
         created_by=username,
+        created_at=datetime.utcnow(),
         status=status,
         approval_required=approval_required,
         notification_flag=notification_flag,
         approved_by=approved_by,
+        approved_at=approved_at,
     )
 
     downtime_events[event_id] = event
@@ -291,10 +310,94 @@ def create_downtime_event(
     return event
 
 
+def calculate_estimated_line_oee(downtime_minutes: float) -> float:
+    availability = max(0, (STANDARD_SHIFT_MINUTES - downtime_minutes) / STANDARD_SHIFT_MINUTES)
+    estimated_performance = 0.95
+    estimated_quality = 0.97
+    return round(availability * estimated_performance * estimated_quality * 100, 2)
+
+
+def build_line_rankings(events: List[DowntimeEvent]) -> List[dict]:
+    line_data = defaultdict(lambda: {"events": 0, "downtime": 0, "pending": 0})
+
+    for event in events:
+        line_data[event.line_id]["events"] += 1
+        line_data[event.line_id]["downtime"] += event.minutes
+
+        if event.status == DowntimeStatus.pending:
+            line_data[event.line_id]["pending"] += 1
+
+    rankings = []
+
+    for line_id, data in line_data.items():
+        downtime = round(data["downtime"], 2)
+
+        rankings.append({
+            "line_id": line_id,
+            "total_events": data["events"],
+            "downtime_minutes": downtime,
+            "pending_approvals": data["pending"],
+            "estimated_oee": calculate_estimated_line_oee(downtime),
+        })
+
+    rankings.sort(key=lambda line: line["estimated_oee"], reverse=True)
+    return rankings
+
+
+def calculate_average_approval_time_minutes(events: List[DowntimeEvent]) -> Optional[float]:
+    approved_events = [
+        event for event in events
+        if event.status == DowntimeStatus.approved
+        and event.created_at
+        and event.approved_at
+    ]
+
+    if not approved_events:
+        return None
+
+    total_minutes = 0
+
+    for event in approved_events:
+        diff = (event.approved_at - event.created_at).total_seconds() / 60
+        total_minutes += max(diff, 0)
+
+    return round(total_minutes / len(approved_events), 2)
+
+
+# -----------------------------
+# Routes
+# -----------------------------
+@app.get("/")
+def root():
+    return {"message": "SPTS API is running"}
+
+
+@app.get("/health", response_model=HealthStatus)
+def health_check():
+    return HealthStatus(
+        status="SPTS API running",
+        api_version="2.4.0",
+        timestamp=datetime.utcnow(),
+        stored_downtime_events=len(downtime_events),
+        supervisor_messages=len(supervisor_messages),
+    )
+
+
+@app.post("/downtime", response_model=DowntimeEvent)
+def create_downtime_event(
+    payload: DowntimeCreate,
+    x_user: Optional[str] = Header(default=None)
+):
+    username = get_current_user(x_user)
+    require_role(username, ["Operator", "Supervisor", "Admin"])
+
+    return create_event_from_downtime_payload(payload, username)
+
+
 @app.get("/downtime", response_model=List[DowntimeEvent])
 def list_downtime_events(x_user: Optional[str] = Header(default=None)):
     username = get_current_user(x_user)
-    require_role(username, ["Operator", "Supervisor", "Admin"])
+    require_role(username, ["Operator", "Supervisor", "Manager", "Admin"])
     return list(downtime_events.values())
 
 
@@ -312,7 +415,7 @@ def list_pending_downtime_events(x_user: Optional[str] = Header(default=None)):
 @app.get("/downtime/{event_id}", response_model=DowntimeEvent)
 def get_downtime_event(event_id: int, x_user: Optional[str] = Header(default=None)):
     username = get_current_user(x_user)
-    require_role(username, ["Supervisor", "Admin"])
+    require_role(username, ["Supervisor", "Manager", "Admin"])
 
     event = downtime_events.get(event_id)
     if not event:
@@ -336,6 +439,7 @@ def approve_downtime_event(event_id: int, x_user: Optional[str] = Header(default
         update={
             "status": DowntimeStatus.approved,
             "approved_by": username,
+            "approved_at": datetime.utcnow(),
             "notification_flag": False,
         }
     )
@@ -366,9 +470,13 @@ def mark_supervisor_message_as_read(
 
     for index, message in enumerate(supervisor_messages):
         if message.message_id == message_id:
-            updated_message = message.model_copy(update={"is_read": True})
-            supervisor_messages[index] = updated_message
-            return updated_message
+            supervisor_messages[index] = message.model_copy(
+                update={
+                    "is_read": True,
+                    "read_at": datetime.utcnow(),
+                }
+            )
+            return supervisor_messages[index]
 
     raise HTTPException(status_code=404, detail="Supervisor message not found")
 
@@ -376,7 +484,7 @@ def mark_supervisor_message_as_read(
 @app.post("/oee/calculate", response_model=OEEOutput)
 def calculate_oee(payload: OEEInput, x_user: Optional[str] = Header(default=None)):
     username = get_current_user(x_user)
-    require_role(username, ["Operator", "Supervisor", "Admin"])
+    require_role(username, ["Operator", "Supervisor", "Manager", "Admin"])
 
     if payload.good_count > payload.total_count:
         raise HTTPException(
@@ -409,19 +517,19 @@ def calculate_oee(payload: OEEInput, x_user: Optional[str] = Header(default=None
     oee = availability * performance * quality
 
     return OEEOutput(
-    availability=round(availability, 4),
-    performance=round(performance, 4),
-    quality=round(quality, 4),
-    oee=round(oee, 4),
-    oee_percent=round(oee * 100, 2),
-    runtime_minutes=round(runtime_minutes, 2),
-)
+        availability=round(availability, 4),
+        performance=round(performance, 4),
+        quality=round(quality, 4),
+        oee=round(oee, 4),
+        oee_percent=round(oee * 100, 2),
+        runtime_minutes=round(runtime_minutes, 2),
+    )
 
 
 @app.get("/lines/{line_id}/events", response_model=List[DowntimeEvent])
 def get_line_events(line_id: str, x_user: Optional[str] = Header(default=None)):
     username = get_current_user(x_user)
-    require_role(username, ["Operator", "Supervisor", "Admin"])
+    require_role(username, ["Operator", "Supervisor", "Manager", "Admin"])
 
     line_events = get_events_for_line(line_id)
     return sorted(line_events, key=lambda event: event.start_time)
@@ -430,7 +538,7 @@ def get_line_events(line_id: str, x_user: Optional[str] = Header(default=None)):
 @app.get("/lines/{line_id}/summary", response_model=LineSummary)
 def get_line_summary(line_id: str, x_user: Optional[str] = Header(default=None)):
     username = get_current_user(x_user)
-    require_role(username, ["Operator", "Supervisor", "Admin"])
+    require_role(username, ["Operator", "Supervisor", "Manager", "Admin"])
 
     line_events = get_events_for_line(line_id)
 
@@ -450,6 +558,189 @@ def get_line_summary(line_id: str, x_user: Optional[str] = Header(default=None))
         current_status=current_status,
         latest_event=latest_event,
     )
+
+
+@app.get("/manager/summary")
+def get_manager_summary(x_user: Optional[str] = Header(default=None)):
+    username = get_current_user(x_user)
+    require_role(username, ["Manager", "Admin"])
+
+    events = list(downtime_events.values())
+
+    if not events:
+        return {
+            "overall_oee": 0,
+            "availability": 0,
+            "performance": 0,
+            "quality": 0,
+            "total_downtime_minutes": 0,
+            "pending_approvals": 0,
+            "highest_risk_line": "--",
+            "best_line": "--",
+            "worst_line": "--",
+            "top_downtime_reason": "--",
+            "estimated_cost_impact": 0,
+            "line_rankings": [],
+            "reason_summary": [],
+            "management_insight": "No downtime events have been recorded yet."
+        }
+
+    total_downtime = round(sum(event.minutes for event in events), 2)
+    pending_count = sum(1 for event in events if event.status == DowntimeStatus.pending)
+
+    reason_counts = Counter(event.reason_code for event in events)
+    top_reason = reason_counts.most_common(1)[0][0]
+
+    line_rankings = build_line_rankings(events)
+
+    best_line = line_rankings[0]["line_id"] if line_rankings else "--"
+    worst_line = line_rankings[-1]["line_id"] if line_rankings else "--"
+
+    highest_risk = max(
+        line_rankings,
+        key=lambda line: line["downtime_minutes"] + (line["pending_approvals"] * 50)
+    )
+
+    availability = max(0, (STANDARD_SHIFT_MINUTES - total_downtime) / STANDARD_SHIFT_MINUTES)
+    performance = 0.95
+    quality = 0.97
+    overall_oee = availability * performance * quality
+
+    estimated_cost = round(total_downtime * DOWNTIME_COST_PER_MINUTE, 2)
+
+    insight = (
+        f"{highest_risk['line_id']} is currently the highest-risk line with "
+        f"{highest_risk['downtime_minutes']} minutes of downtime and "
+        f"{highest_risk['pending_approvals']} pending approval(s). "
+        f"The top downtime reason is {top_reason}. Estimated downtime cost impact is "
+        f"${estimated_cost}."
+    )
+
+    return {
+        "overall_oee": round(overall_oee * 100, 2),
+        "availability": round(availability * 100, 2),
+        "performance": round(performance * 100, 2),
+        "quality": round(quality * 100, 2),
+        "total_downtime_minutes": total_downtime,
+        "pending_approvals": pending_count,
+        "highest_risk_line": highest_risk["line_id"],
+        "best_line": best_line,
+        "worst_line": worst_line,
+        "top_downtime_reason": top_reason,
+        "estimated_cost_impact": estimated_cost,
+        "line_rankings": line_rankings,
+        "reason_summary": [
+            {"reason": reason, "count": count}
+            for reason, count in reason_counts.most_common()
+        ],
+        "management_insight": insight
+    }
+
+
+@app.get("/supervisor/summary")
+def get_supervisor_summary(x_user: Optional[str] = Header(default=None)):
+    username = get_current_user(x_user)
+    require_role(username, ["Supervisor", "Admin"])
+
+    events = list(downtime_events.values())
+    pending_events = [
+        event for event in events
+        if event.status == DowntimeStatus.pending
+    ]
+    approved_events = [
+        event for event in events
+        if event.status == DowntimeStatus.approved
+    ]
+
+    if not events:
+        return {
+            "pending_approvals": 0,
+            "open_downtime_minutes": 0,
+            "longest_pending_minutes": 0,
+            "waiting_over_30_minutes": 0,
+            "approved_events": 0,
+            "average_approval_time_minutes": None,
+            "top_downtime_reason": "--",
+            "escalation_alerts": [],
+            "supervisor_insight": "No downtime events are currently recorded."
+        }
+
+    open_downtime = round(sum(event.minutes for event in pending_events), 2)
+    longest_pending = max([event.minutes for event in pending_events], default=0)
+    waiting_over_30 = sum(1 for event in pending_events if event.minutes > 30)
+
+    reason_counts = Counter(event.reason_code for event in events)
+    top_reason = reason_counts.most_common(1)[0][0]
+
+    avg_approval = calculate_average_approval_time_minutes(events)
+
+    escalation_alerts = []
+
+    for event in pending_events:
+        if event.minutes > 30:
+            escalation_alerts.append({
+                "event_id": event.event_id,
+                "line_id": event.line_id,
+                "machine_id": event.machine_id,
+                "minutes": event.minutes,
+                "reason_code": event.reason_code,
+                "message": (
+                    f"Event {event.event_id} has been open for {event.minutes} minutes "
+                    f"and may require escalation."
+                )
+            })
+
+    if waiting_over_30 > 0:
+        insight = (
+            f"{waiting_over_30} pending event(s) are over 30 minutes. "
+            f"Top downtime reason is {top_reason}. Supervisor escalation review is recommended."
+        )
+    elif pending_events:
+        insight = (
+            f"{len(pending_events)} event(s) are waiting for approval. "
+            f"Current workflow is active but not yet escalated."
+        )
+    else:
+        insight = (
+            f"No pending approvals. {len(approved_events)} event(s) have been approved "
+            f"in the current session."
+        )
+
+    return {
+        "pending_approvals": len(pending_events),
+        "open_downtime_minutes": open_downtime,
+        "longest_pending_minutes": round(longest_pending, 2),
+        "waiting_over_30_minutes": waiting_over_30,
+        "approved_events": len(approved_events),
+        "average_approval_time_minutes": avg_approval,
+        "top_downtime_reason": top_reason,
+        "escalation_alerts": escalation_alerts,
+        "supervisor_insight": insight
+    }
+
+
+@app.post("/plc/simulate", response_model=DowntimeEvent)
+def simulate_plc_downtime_event(
+    payload: PLCEventInput,
+    x_user: Optional[str] = Header(default=None)
+):
+    username = get_current_user(x_user)
+    require_role(username, ["Supervisor", "Admin"])
+
+    now = datetime.utcnow()
+    start_time = now - timedelta(minutes=payload.minutes)
+
+    downtime_payload = DowntimeCreate(
+        line_id=payload.line_id,
+        machine_id=payload.machine_id,
+        reason_code=payload.reason_code,
+        start_time=start_time,
+        end_time=now,
+        source=DowntimeSource.plc,
+        comments=payload.comments,
+    )
+
+    return create_event_from_downtime_payload(downtime_payload, username)
 
 
 @app.get("/users")

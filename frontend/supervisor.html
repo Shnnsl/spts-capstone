@@ -14,49 +14,156 @@
     <header class="supervisor-header">
       <div>
         <h1>Supervisor Dashboard</h1>
-        <p>Review downtime events, approval queue, and supervisor messages</p>
+        <p>Monitor downtime approvals, production KPIs, alerts, and workflow status</p>
       </div>
 
       <div class="supervisor-actions">
-        <button onclick="loadSupervisorDashboard()">Refresh</button>
+        <button onclick="loadSupervisorDashboard()">Refresh Dashboard</button>
       </div>
     </header>
 
-    <section class="supervisor-kpi-grid">
+    <section class="supervisor-filter-bar">
+      <div>
+        <label for="supervisorLineFilter">Line</label>
+        <select id="supervisorLineFilter" onchange="loadSupervisorDashboard()">
+          <option value="all">All Lines</option>
+          <option value="Line1">Line 1</option>
+          <option value="Line2">Line 2</option>
+          <option value="Line3">Line 3</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="supervisorShiftFilter">Shift</label>
+        <select id="supervisorShiftFilter" onchange="loadSupervisorDashboard()">
+          <option value="all">All Shifts</option>
+          <option value="Shift A">Shift A (06:00 - 14:00)</option>
+          <option value="Shift B">Shift B (14:00 - 22:00)</option>
+          <option value="Shift C">Shift C (22:00 - 06:00)</option>
+        </select>
+      </div>
+
+      <div class="supervisor-live-status">
+        <span class="status-dot"></span>
+        Live Supervisor View
+      </div>
+    </section>
+
+    <section class="supervisor-kpi-grid enhanced">
       <div class="supervisor-kpi-card urgent">
         <span>Pending Approvals</span>
         <strong id="supervisorPendingCount">0</strong>
         <p>Events requiring supervisor review</p>
       </div>
 
-      <div class="supervisor-kpi-card">
-        <span>Messages</span>
-        <strong id="supervisorMessageCount">0</strong>
-        <p>Supervisor alerts and notifications</p>
+      <div class="supervisor-kpi-card warning">
+        <span>Open Downtime Minutes</span>
+        <strong id="openDowntimeMinutes">0 min</strong>
+        <p>Total unresolved downtime waiting for action</p>
       </div>
 
-      <div class="supervisor-kpi-card">
+      <div class="supervisor-kpi-card warning">
         <span>Longest Pending</span>
         <strong id="longestPending">-- min</strong>
         <p>Highest downtime duration awaiting review</p>
+      </div>
+
+      <div class="supervisor-kpi-card">
+        <span>Average Approval Time</span>
+        <strong id="avgApprovalTime">-- min</strong>
+        <p>Average supervisor response time</p>
+      </div>
+
+      <div class="supervisor-kpi-card urgent">
+        <span>Waiting Over 30 Min</span>
+        <strong id="waitingOverThirty">0</strong>
+        <p>Events that may need escalation</p>
+      </div>
+
+      <div class="supervisor-kpi-card success">
+        <span>Approved Events</span>
+        <strong id="approvedTodayCount">0</strong>
+        <p>Approved downtime events in current session</p>
+      </div>
+    </section>
+
+    <section class="supervisor-panel supervisor-oee-panel">
+      <div class="panel-title-row">
+        <h2>Line Performance Snapshot</h2>
+        <span class="panel-badge">OEE / KPI</span>
+      </div>
+
+      <div class="supervisor-oee-layout">
+        <div class="supervisor-oee-main">
+          <span>Current OEE</span>
+          <strong id="supervisorOee">--%</strong>
+          <p>Supervisor view of current production performance.</p>
+        </div>
+
+        <div class="supervisor-kpi-bars">
+          <div class="supervisor-bar-row">
+            <span>Availability</span>
+            <strong id="supervisorAvailability">--%</strong>
+          </div>
+          <div class="supervisor-bar-track">
+            <div id="supervisorAvailabilityBar" class="supervisor-bar-fill availability-fill"></div>
+          </div>
+
+          <div class="supervisor-bar-row">
+            <span>Performance</span>
+            <strong id="supervisorPerformance">--%</strong>
+          </div>
+          <div class="supervisor-bar-track">
+            <div id="supervisorPerformanceBar" class="supervisor-bar-fill performance-fill"></div>
+          </div>
+
+          <div class="supervisor-bar-row">
+            <span>Quality</span>
+            <strong id="supervisorQuality">--%</strong>
+          </div>
+          <div class="supervisor-bar-track">
+            <div id="supervisorQualityBar" class="supervisor-bar-fill quality-fill"></div>
+          </div>
+        </div>
       </div>
     </section>
 
     <section class="supervisor-grid">
       <div class="supervisor-panel">
-        <h2>Approval Queue</h2>
+        <div class="panel-title-row">
+          <h2>Approval Queue</h2>
+          <span class="panel-badge">Workflow</span>
+        </div>
         <div id="pendingEvents"></div>
       </div>
 
       <div class="supervisor-panel">
-        <h2>Supervisor Messages</h2>
+        <div class="panel-title-row">
+          <h2>Supervisor Messages</h2>
+          <span class="panel-badge">Alerts</span>
+        </div>
         <div id="supervisorMessages"></div>
       </div>
     </section>
 
-    <section class="supervisor-panel result-panel">
-      <h2>Action Result</h2>
-      <pre id="supervisorResult">No action performed yet.</pre>
+    <section class="supervisor-grid lower-grid">
+      <div class="supervisor-panel">
+        <div class="panel-title-row">
+          <h2>Recent Activity</h2>
+          <span class="panel-badge">Live Feed</span>
+        </div>
+        <div id="supervisorActivityFeed" class="activity-feed">
+          <div class="activity-item">System waiting for new downtime events.</div>
+        </div>
+      </div>
+
+      <div class="supervisor-panel result-panel">
+        <div class="panel-title-row">
+          <h2>Action Result</h2>
+          <span class="panel-badge">Response</span>
+        </div>
+        <pre id="supervisorResult">No action performed yet.</pre>
+      </div>
     </section>
   </div>
 
