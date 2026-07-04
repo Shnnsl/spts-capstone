@@ -309,10 +309,5 @@ This project demonstrates practical software engineering concepts including:
 
 ---
 
-# 📄 License
-
-This project is licensed under the MIT License.
-
----
 
 ⭐ If you found this project interesting, please consider giving it a star!
