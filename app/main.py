@@ -2,10 +2,13 @@ from enum import Enum
 from typing import Optional, List
 from datetime import datetime, timedelta
 from collections import Counter, defaultdict
+from app.database import Base, engine
+from app import models
 
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SPTS API", version="2.4.0")
 
