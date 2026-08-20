@@ -4,16 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SPTS Line UI</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=live-line-r2" />
 </head>
-<body class="line-page">
+<body class="line-page auth-pending">
 
   <aside class="line-sidebar">
     <div class="brand">
       <div class="brand-logo">SPTS</div>
       <div class="brand-subtitle">Smart Production<br />Tracking System</div>
     </div>
-Home</a>
   <nav class="side-nav">
   <a class="active" href="#dashboard">📊 Dashboard</a>
   <a href="#downtime">⏱ Downtime</a>
@@ -24,6 +23,21 @@ Home</a>
   </aside>
 
   <main class="line-main">
+    <header class="app-dashboard-header">
+      <div class="dashboard-title">
+        <span class="dashboard-brand"><img src="assets/Logo.png" alt="SPTS logo" /></span>
+        <div><h1>Line Dashboard</h1><p>Real-time production monitoring and downtime entry</p></div>
+      </div>
+      <div class="dashboard-header-actions">
+        <nav class="role-navigation" data-role-navigation aria-label="Dashboard navigation"></nav>
+        <div class="dashboard-user">
+          <strong data-current-user>Loading user…</strong>
+          <span class="role-badge" data-current-role></span>
+          <span data-password-warning hidden>Password change is required for this account.</span>
+        </div>
+        <button type="button" onclick="logout()">Logout</button>
+      </div>
+    </header>
 
     <section class="top-bar" id="dashboard">
   <div class="top-card">
@@ -59,129 +73,151 @@ Home</a>
   </div>
 </section>
 
-    <section class="line-grid">
-
-      <div class="panel status-panel">
-        <div class="panel-title">Line Status</div>
-        <div class="status-large" id="lineStatus">
-  <span class="pulse-dot"></span>
-  RUNNING
-</div>
-        <div class="status-sub">Since 09:15 AM</div>
-      </div>
-
-      <div class="panel oee-panel">
-        <div class="panel-title">OEE</div>
-        <div class="oee-number" id="oeeDisplay">-- %</div>
-        <div class="progress-track">
-          <div class="progress-fill" id="oeeProgress"></div>
+    <section class="line-grid hmi-monitoring" aria-label="Tabletop line monitoring">
+      <section id="liveLineStatusPanel" class="panel hmi-line-header live-line-status is-ready" aria-labelledby="lineMonitoringHeading">
+        <div>
+          <span class="hmi-eyebrow">Tabletop Line</span>
+          <h2 id="lineMonitoringHeading"><span id="trialLineId">LINE-01</span> Production Monitoring</h2>
+          <p id="liveLineMessage">Waiting for trial start</p>
+          <small>Event-derived monitoring only. The conveyor remains manually operated.</small>
         </div>
-        <div class="progress-labels">
-          <span>0%</span>
-          <span>100%</span>
+        <div class="hmi-header-status">
+          <span>Current Status</span>
+          <div class="live-status-value"><span id="liveLineIndicator" class="live-status-indicator" aria-hidden="true">●</span><strong id="trialLineStatus">READY</strong></div>
+          <small id="liveLineDowntimeElapsed" hidden>Active downtime 00:00:00</small>
+          <span id="lineStatus" hidden aria-hidden="true">READY</span>
         </div>
-      </div>
-
-      <div class="panel target-panel">
-        <div class="panel-title">Target Progress</div>
-        <div class="target-number"><span>850</span> / 1000</div>
-        <div class="target-sub">85% of target</div>
-        <div class="progress-track">
-          <div class="progress-fill target-fill"></div>
+        <div class="hmi-header-event">
+          <span>Last PLC / Event</span>
+          <strong id="trialLastEvent">No events yet</strong>
+          <small id="trialUiVersion">SPTS tabletop UI version: live-line-r2</small>
         </div>
-        <p>Remaining: 150 units</p>
-      </div>
+        <div id="liveLineFlow" class="live-line-flow" role="img" aria-label="Production flow: Input, Filler, Cartoner, Case Packer, Finished Case">
+          <div class="flow-track" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="flow-stations">
+            <span class="flow-station flow-endpoint" data-flow-station="INPUT">Input</span><b>→</b>
+            <span class="flow-station" data-flow-station="FILLER">Filler</span><b>→</b>
+            <span class="flow-station" data-flow-station="CARTONER">Cartoner</span><b>→</b>
+            <span class="flow-station" data-flow-station="CASE_PACKER">Case Packer</span><b>→</b>
+            <span class="flow-station flow-endpoint" data-flow-station="FINISHED_GOODS">Finished Case</span>
+          </div>
+        </div>
+      </section>
 
-      <div class="panel kpi-bar-panel">
-  <div class="panel-title">Availability</div>
-  <div class="kpi-row">
-    <span>Line Runtime</span>
-    <strong id="availabilityValue">85%</strong>
-  </div>
-  <div class="kpi-track">
-    <div class="kpi-fill availability-fill" style="width: 85%;"></div>
-  </div>
-  <p>Shows how much planned time the line was actually running.</p>
-</div>
+      <section class="hmi-section hmi-production" aria-labelledby="productionHeading">
+        <div class="hmi-section-heading"><h2 id="productionHeading">Production</h2><span>Current tabletop totals</span></div>
+        <div class="hmi-primary-grid">
+          <article class="hmi-metric-card"><span>Input Tubes</span><strong id="trialInputTubeCount">0</strong></article>
+          <article class="hmi-metric-card"><span>Finished Cases</span><strong id="trialFinishedCaseCount">0</strong></article>
+          <article class="hmi-metric-card"><span>Finished Tube Equivalent</span><strong id="trialFinishedTubeEquivalent">0</strong></article>
+          <article class="hmi-metric-card"><span>Unaccounted Tubes / WIP</span><strong id="trialUnaccountedTubes">0</strong></article>
+          <article class="hmi-metric-card"><span>Finalized Waste Tubes</span><strong id="trialFinalizedWaste">0</strong></article>
+          <article class="hmi-metric-card hmi-runtime-card"><span>Runtime</span><strong id="trialRuntimePrimary">00:00:00</strong></article>
+        </div>
+      </section>
 
-      <div class="panel kpi-bar-panel">
-  <div class="panel-title">Performance</div>
-  <div class="kpi-row">
-    <span>Speed Efficiency</span>
-    <strong id="performanceValue">83%</strong>
-  </div>
-  <div class="kpi-track">
-    <div class="kpi-fill performance-fill" style="width: 83%;"></div>
-  </div>
-  <p>Compares actual production speed against the ideal rate.</p>
-</div>
+      <section class="hmi-section" aria-labelledby="machineHeading">
+        <div class="hmi-section-heading"><h2 id="machineHeading">Machine Status</h2><span>Blockage sensor condition</span></div>
+        <div class="hmi-machine-grid">
+          <article class="hmi-machine-card" data-machine-card="FILLER"><span>Filler Sensor</span><strong id="trialFillerSensor">CLEAR</strong><small data-machine-downtime="FILLER"></small></article>
+          <article class="hmi-machine-card" data-machine-card="CARTONER"><span>Cartoner Sensor</span><strong id="trialCartonerSensor">CLEAR</strong><small data-machine-downtime="CARTONER"></small></article>
+          <article class="hmi-machine-card" data-machine-card="CASE_PACKER"><span>Case Packer Sensor</span><strong id="trialCasePackerSensor">CLEAR</strong><small data-machine-downtime="CASE_PACKER"></small></article>
+        </div>
+      </section>
 
-      <div class="panel kpi-bar-panel">
-  <div class="panel-title">Quality</div>
-  <div class="kpi-row">
-    <span>Good Product Rate</span>
-    <strong id="qualityValue">97%</strong>
-  </div>
-  <div class="kpi-track">
-    <div class="kpi-fill quality-fill" style="width: 97%;"></div>
-  </div>
-  <p>Shows the percentage of good units produced.</p>
-</div>
+      <section class="panel hmi-active-downtime" aria-labelledby="activeDowntimeHeading">
+        <div class="hmi-section-heading"><h2 id="activeDowntimeHeading">Active Downtime</h2><span>SPTS-detected operational condition</span></div>
+        <p id="trialNoActiveDowntime" class="hmi-empty-state">No active downtime</p>
+        <div id="trialActiveDowntime" class="trial-downtime-status" hidden>
+          <strong>Active Downtime: <span id="trialDowntimeStation">--</span></strong>
+          <span>Reason: <span id="trialDowntimeReason">--</span></span>
+          <span>Started At: <span id="trialDowntimeStartedAt">--</span></span>
+          <span>Elapsed: <span id="trialDowntimeElapsed">00:00:00</span></span>
+          <span class="visually-secondary">Expected Next State: <span id="trialExpectedStation">--</span></span>
+          <small>This status does not mean SPTS stopped or controlled the manual conveyor.</small>
+        </div>
+      </section>
 
-      <div class="panel downtime-panel" id="downtimePanel">
-  <div class="panel-title">Downtime Overview</div>
-  <div class="downtime-stats">
-    <div>
-      <strong id="downtime">0</strong>
-      <span>Total Minutes</span>
-    </div>
-    <div>
-      <strong id="totalEvents">0</strong>
-      <span>Total Events</span>
-    </div>
-    <div>
-      <strong id="pending">0</strong>
-      <span>Pending Approval</span>
-    </div>
-  </div>
-</div>
+      <section class="hmi-section" aria-labelledby="oeeHeading">
+        <div class="hmi-section-heading"><h2 id="oeeHeading">Tabletop OEE</h2><span>Current run performance</span></div>
+        <div class="hmi-oee-grid">
+          <article class="hmi-oee-card"><span>Availability</span><strong id="availabilityValue">0%</strong><div class="kpi-track"><div class="kpi-fill availability-fill"></div></div></article>
+          <article class="hmi-oee-card"><span>Performance</span><strong id="performanceValue">0%</strong><div class="kpi-track"><div class="kpi-fill performance-fill"></div></div></article>
+          <article class="hmi-oee-card"><span>Quality</span><strong id="qualityValue">0%</strong><div class="kpi-track"><div class="kpi-fill quality-fill"></div></div></article>
+          <article class="hmi-oee-card hmi-overall-oee"><span>Overall OEE</span><strong id="oeeDisplay">Not started</strong><small id="trialOeeState" hidden>Waiting for trial start</small><div class="progress-track"><div class="progress-fill" id="oeeProgress"></div></div></article>
+        </div>
+      </section>
 
-<div class="panel last-event-panel">
-  <div class="panel-title danger">Last Downtime Event</div>
-  <div id="latestEventBox">
-    <p>No downtime event recorded yet.</p>
-  </div>
-</div>
+      <section class="panel hmi-details" aria-labelledby="detailsHeading">
+        <div class="hmi-section-heading"><h2 id="detailsHeading">Trial Timing and Production Details</h2></div>
+        <div class="hmi-details-grid">
+          <div>
+            <h3>Trial Timing</h3>
+            <dl>
+              <div><dt>Trial Started At</dt><dd id="trialStartedAt">Not started</dd></div>
+              <div><dt>Trial Elapsed Time</dt><dd id="trialElapsedTime">00:00:00</dd></div>
+              <div><dt>Planned Time</dt><dd><span id="trialPlannedMinutes">0.00</span> min</dd></div>
+              <div><dt>Detected Downtime</dt><dd id="trialDetectedDowntime">0.00 min</dd></div>
+              <div><dt>Runtime</dt><dd id="trialRuntimeMinutes">0.00 min</dd></div>
+              <div><dt>Ideal Cycle Time</dt><dd id="trialIdealCycleDisplay">2.00 seconds</dd></div>
+            </dl>
+          </div>
+          <div>
+            <h3>Production Details</h3>
+            <dl>
+              <div><dt>Units per Case</dt><dd id="trialUnitsPerCase">12</dd></div>
+              <div><dt>Input Tubes</dt><dd id="trialDetailInputTubes">0</dd></div>
+              <div><dt>Finished Cases</dt><dd id="trialDetailFinishedCases">0</dd></div>
+              <div><dt>Finished Tube Equivalent</dt><dd id="trialDetailFinishedEquivalent">0</dd></div>
+              <div><dt>Unaccounted Tubes / WIP</dt><dd id="trialPotentialUnaccounted">0</dd></div>
+              <div><dt>Finalized Waste Tubes</dt><dd id="trialDetailFinalizedWaste">0</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
 
-<div class="panel alerts-panel" id="alerts">
-  <div class="panel-title">Alerts</div>
-  <div id="alertsBox">
-    <p>No active alerts.</p>
-  </div>
-</div>
+      <section class="panel trial-history hmi-history" aria-labelledby="historyHeading">
+        <div class="hmi-section-heading"><h2 id="historyHeading">Recent Trial Downtime</h2><span>Machine blockage events and approval state</span></div>
+        <div id="trialDowntimeHistory"><p>No trial downtime recorded.</p></div>
+      </section>
 
-<div class="panel input-panel" id="input">
-  <div class="panel-title">Quick Downtime Entry</div>
+      <section class="hmi-support-grid" aria-label="Additional line monitoring">
+        <div class="panel downtime-panel" id="downtimePanel"><div class="panel-title">Downtime Overview</div><div class="downtime-stats"><div><strong id="downtime">0</strong><span>Total Minutes</span></div><div><strong id="totalEvents">0</strong><span>Total Events</span></div><div><strong id="pending">0</strong><span>Pending Approval</span></div></div></div>
+        <div class="panel last-event-panel"><div class="panel-title danger">Last Downtime Event</div><div id="latestEventBox"><p>No downtime event recorded yet.</p></div></div>
+        <div class="panel alerts-panel" id="alerts"><div class="panel-title">Alerts</div><div id="alertsBox"><p>No active alerts.</p></div></div>
+        <div class="panel input-panel" id="input"><div class="panel-title">Quick Downtime Entry</div><label for="reason_code">Reason</label><select id="reason_code"><option>Breakdown</option><option>Changeover</option><option>Material Shortage</option><option>Minor Stop</option></select><label for="minutes">Downtime (Minutes)</label><input id="minutes" type="number" placeholder="Enter downtime duration" /><button id="downtimeSubmitButton" onclick="quickDowntime()">Record Downtime</button><div id="lineResult" class="user-alert" role="status" aria-live="polite" hidden></div></div>
+      </section>
 
- 
-
-  <label>Reason</label>
-  <select id="reason_code">
-    <option>Breakdown</option>
-    <option>Changeover</option>
-    <option>Material Shortage</option>
-    <option>Minor Stop</option>
-  </select>
-
-  <label>Downtime (Minutes)</label>
-  <input id="minutes" type="number" placeholder="Enter downtime duration" />
-
-  <button onclick="quickDowntime()">Record Downtime</button>
-
-  <pre id="lineResult"></pre>
-</div>
-
-</section>
+      <section class="panel hmi-development-controls" aria-labelledby="developmentHeading">
+        <div class="hmi-section-heading"><div><h2 id="developmentHeading">Development Simulator — Temporary</h2><p>These controls are for software testing only. During the physical trial, events will be generated automatically by the Raspberry Pi sensor client.</p></div></div>
+        <div class="trial-actions">
+          <button type="button" data-trial-start onclick="startTabletopTrial()">Start Trial Run</button>
+          <button type="button" class="button-secondary" data-trial-reset onclick="resetTabletopTrial()">Reset Trial</button>
+          <button type="button" data-trial-finalize onclick="finalizeTabletopTrial()">Finalize Trial</button>
+          <button type="button" id="simulateTrialButton" data-trial-simulator onclick="simulateNextTrialEvent()">Simulate Next Station</button>
+          <button type="button" data-trial-simulator onclick="simulateCompleteSequence()">Complete Sequence</button>
+        </div>
+        <div class="trial-simulator-controls" data-trial-simulator>
+          <button type="button" onclick="simulateTrialEvent('INPUT_TUBE')">Input Tube Detected</button>
+          <button type="button" onclick="simulateTrialEvent('FILLER_ACTIVE')">Filler Sensor Active</button>
+          <button type="button" onclick="simulateTrialEvent('FILLER_CLEAR')">Filler Sensor Clear</button>
+          <button type="button" onclick="simulateTrialEvent('CARTONER_ACTIVE')">Cartoner Sensor Active</button>
+          <button type="button" onclick="simulateTrialEvent('CARTONER_CLEAR')">Cartoner Sensor Clear</button>
+          <button type="button" onclick="simulateTrialEvent('CASE_PACKER_ACTIVE')">Case Packer Sensor Active</button>
+          <button type="button" onclick="simulateTrialEvent('CASE_PACKER_CLEAR')">Case Packer Sensor Clear</button>
+          <button type="button" onclick="simulateTrialEvent('FINISHED_CASE')">Finished Case Detected</button>
+        </div>
+        <div class="trial-reject-control" data-trial-reject>
+          <strong>Trial OEE Inputs</strong>
+          <label for="trialStartingInputQuantity">Starting Input Quantity (tubes)</label><input id="trialStartingInputQuantity" type="number" min="1" step="1" value="50" />
+          <label for="trialIdealCycleTime">Ideal Cycle Time (seconds per tube)</label><input id="trialIdealCycleTime" type="number" min="0.001" step="0.001" value="2" />
+          <label for="trialRejectCount">Confirmed Reject (legacy/testing only; excluded from tabletop OEE)</label><input id="trialRejectCount" type="number" min="0" value="0" />
+          <button type="button" onclick="saveTrialConfiguration()">Save Trial Configuration</button>
+        </div>
+        <div id="trialSequenceWarning" class="user-alert warning" hidden></div>
+        <div id="trialResult" class="user-alert" role="status" aria-live="polite" hidden></div>
+      </section>
+    </section>
 
 <footer class="line-footer">
   <span id="lastUpdated">Last updated: --</span>
@@ -190,6 +226,11 @@ Home</a>
 
 </main>
 
-<script src="script.js"></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script>
+  window.sptsAuthReady = requireLogin();
+</script>
+<script src="script.js?v=live-line-r2"></script>
 </body>
 </html>

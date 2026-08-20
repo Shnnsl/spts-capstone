@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administrator Dashboard | SPTS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="admin-page auth-pending">
+  <main class="admin-container">
+    <header class="app-dashboard-header">
+      <div class="dashboard-title">
+        <span class="dashboard-brand"><img src="assets/Logo.png" alt="SPTS logo" /></span>
+        <div>
+          <p class="application-name">Smart Production Tracking System</p>
+          <h1>Administrator Dashboard</h1>
+        </div>
+      </div>
+      <div class="dashboard-header-actions">
+        <nav class="role-navigation" data-role-navigation aria-label="Dashboard navigation"></nav>
+        <div class="dashboard-user">
+          <strong data-current-user>Loading user…</strong>
+          <span class="role-badge" data-current-role></span>
+          <span data-password-warning hidden>Password change is required for this account.</span>
+        </div>
+        <button type="button" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <section class="page-introduction">
+      <div>
+        <span class="section-eyebrow">System administration</span>
+        <h2>Configuration and access overview</h2>
+        <p>User administration controls are prepared for future backend integration.</p>
+      </div>
+      <span class="integration-badge">Backend integration pending</span>
+    </section>
+
+    <section aria-labelledby="systemOverviewTitle">
+      <div class="section-heading">
+        <div><span class="section-eyebrow">Overview</span><h2 id="systemOverviewTitle">System Overview</h2></div>
+      </div>
+      <div class="admin-kpi-grid">
+        <article class="admin-kpi-card"><span>Total Users</span><strong>—</strong><p>Backend integration pending</p></article>
+        <article class="admin-kpi-card"><span>Active Users</span><strong>—</strong><p>Backend integration pending</p></article>
+        <article class="admin-kpi-card"><span>Production Lines</span><strong>—</strong><p>Backend integration pending</p></article>
+        <article class="admin-kpi-card"><span>System Roles</span><strong>4</strong><p>Configured access levels</p></article>
+      </div>
+    </section>
+
+    <section class="admin-panel" aria-labelledby="userManagementTitle">
+      <div class="section-heading">
+        <div><span class="section-eyebrow">Access control</span><h2 id="userManagementTitle">User Management</h2></div>
+        <button type="button" class="button-primary" disabled title="Backend integration pending">Add User · Pending</button>
+      </div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Assigned Line</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td colspan="6"><div class="empty-state">User data will appear when administrator API integration is available.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pending-actions" aria-label="Pending user administration actions">
+        <button type="button" disabled>Edit User · Pending</button>
+        <button type="button" disabled>Reset Password · Pending</button>
+        <button type="button" disabled>Activate / Deactivate · Pending</button>
+      </div>
+    </section>
+
+    <div class="admin-two-column">
+      <section class="admin-panel" aria-labelledby="roleManagementTitle">
+        <div class="section-heading"><div><span class="section-eyebrow">Permissions</span><h2 id="roleManagementTitle">Role Management</h2></div></div>
+        <div class="role-list">
+          <article><span class="role-badge">Line Workstation</span><p>Records production downtime and monitors line performance.</p></article>
+          <article><span class="role-badge">Supervisor</span><p>Reviews downtime, approvals, alerts, and line-level KPIs.</p></article>
+          <article><span class="role-badge">Manager</span><p>Reviews production performance, costs, trends, and summaries.</p></article>
+          <article><span class="role-badge">Administrator</span><p>Manages system access, roles, assignments, and security settings.</p></article>
+        </div>
+      </section>
+
+      <section class="admin-panel" aria-labelledby="lineAssignmentsTitle">
+        <div class="section-heading"><div><span class="section-eyebrow">Production access</span><h2 id="lineAssignmentsTitle">Production Line Assignments</h2></div></div>
+        <div class="assignment-placeholder">
+          <p>Assign users to production lines when backend integration is available.</p>
+          <button type="button" disabled>Manage Assignments · Pending</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="admin-panel" aria-labelledby="securityTitle">
+      <div class="section-heading"><div><span class="section-eyebrow">Protection</span><h2 id="securityTitle">System Security</h2></div></div>
+      <div class="security-grid">
+        <article><strong>JWT Authentication</strong><p>Secure bearer-token authentication is enabled.</p><span class="status-badge approved">Active</span></article>
+        <article><strong>Role-Based Access Control</strong><p>Dashboard and API access is limited by assigned role.</p><span class="status-badge approved">Active</span></article>
+        <article><strong>Password Hashing</strong><p>Passwords are protected by server-side hashing.</p><span class="status-badge approved">Active</span></article>
+        <article><strong>Protected API Endpoints</strong><p>Production workflows require authenticated access.</p><span class="status-badge approved">Active</span></article>
+      </div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    window.sptsAuthReady = requireRole(["ADMINISTRATOR"]);
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>

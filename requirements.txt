@@ -1,3 +1,8 @@
 fastapi
 uvicorn
-pydantic
+sqlalchemy
+pwdlib[argon2]
+python-dotenv
+PyJWT==2.10.1
+httpx
+pytest

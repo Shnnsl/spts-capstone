@@ -6,19 +6,27 @@
   <title>Supervisor Dashboard</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="supervisor-page">
+<body class="supervisor-page auth-pending">
 
   <div class="supervisor-container">
-    <a class="nav-link" href="index.html">← Back to Home</a>
-
-    <header class="supervisor-header">
-      <div>
+    <header class="supervisor-header app-dashboard-header">
+      <div class="dashboard-title">
+        <span class="dashboard-brand"><img src="assets/Logo.png" alt="SPTS logo" /></span>
+        <div>
         <h1>Supervisor Dashboard</h1>
         <p>Monitor downtime approvals, production KPIs, alerts, and workflow status</p>
+        </div>
       </div>
 
       <div class="supervisor-actions">
+        <nav class="role-navigation" data-role-navigation aria-label="Dashboard navigation"></nav>
+        <div class="dashboard-user">
+          <strong data-current-user>Loading user…</strong>
+          <span class="role-badge" data-current-role></span>
+          <span data-password-warning hidden>Password change is required for this account.</span>
+        </div>
         <button onclick="loadSupervisorDashboard()">Refresh Dashboard</button>
+        <button type="button" onclick="logout()">Logout</button>
       </div>
     </header>
 
@@ -27,6 +35,7 @@
         <label for="supervisorLineFilter">Line</label>
         <select id="supervisorLineFilter" onchange="loadSupervisorDashboard()">
           <option value="all">All Lines</option>
+          <option value="LINE-01">Tabletop Line 01</option>
           <option value="Line1">Line 1</option>
           <option value="Line2">Line 2</option>
           <option value="Line3">Line 3</option>
@@ -84,6 +93,12 @@
         <span>Approved Events</span>
         <strong id="approvedTodayCount">0</strong>
         <p>Approved downtime events in current session</p>
+      </div>
+
+      <div class="supervisor-kpi-card">
+        <span>Waste %</span>
+        <strong id="supervisorWaste">0%</strong>
+        <p>Finalized waste from authoritative input tubes</p>
       </div>
     </section>
 
@@ -162,11 +177,16 @@
           <h2>Action Result</h2>
           <span class="panel-badge">Response</span>
         </div>
-        <pre id="supervisorResult">No action performed yet.</pre>
+        <div id="supervisorResult" class="user-alert neutral" role="status" aria-live="polite">No action performed yet.</div>
       </div>
     </section>
   </div>
 
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    window.sptsAuthReady = requireRole(["SUPERVISOR", "ADMINISTRATOR"]);
+  </script>
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,4 +1,44 @@
-__pycache__/
-*.pyc
+# Environment and credentials
 .env
+.env.*
+!.env.example
+login.json
+
+# Python environments and caches
+.venv/
+.venv.*/
+venv/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Runtime data
 spts.db
+*.log
+*.pid
+*.queue.db
+*.queue.sqlite
+*.queue.sqlite3
+plc_queue.db
+plc_queue.sqlite
+plc_queue.sqlite3
+
+# Temporary and editor files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+.vscode/
+.idea/
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

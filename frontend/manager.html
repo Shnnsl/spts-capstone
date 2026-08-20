@@ -6,17 +6,27 @@
   <title>Manager Dashboard</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="manager-page">
+<body class="manager-page auth-pending">
 
   <div class="manager-container">
-    <a class="nav-link" href="index.html">← Back to Home</a>
-
-    <header class="manager-header">
-      <div>
+    <header class="manager-header app-dashboard-header">
+      <div class="dashboard-title">
+        <span class="dashboard-brand"><img src="assets/Logo.png" alt="SPTS logo" /></span>
+        <div>
         <h1>Manager Dashboard</h1>
         <p>Decision view for production performance, downtime, and OEE</p>
+        </div>
       </div>
-      <button onclick="loadManagerDashboard()">Refresh Dashboard</button>
+      <div class="dashboard-header-actions">
+        <nav class="role-navigation" data-role-navigation aria-label="Dashboard navigation"></nav>
+        <div class="dashboard-user">
+          <strong data-current-user>Loading user…</strong>
+          <span class="role-badge" data-current-role></span>
+          <span data-password-warning hidden>Password change is required for this account.</span>
+        </div>
+        <button onclick="loadManagerDashboard()">Refresh Dashboard</button>
+        <button type="button" onclick="logout()">Logout</button>
+      </div>
     </header>
 
     <section class="manager-kpi-grid">
@@ -42,6 +52,12 @@
         <span>Highest Risk Line</span>
         <strong id="riskLine">--</strong>
         <p>Based on downtime and pending approvals</p>
+      </div>
+
+      <div class="manager-kpi-card">
+        <span>Waste %</span>
+        <strong id="managerWaste">0%</strong>
+        <p>Finalized tabletop production waste</p>
       </div>
     </section>
 
@@ -91,6 +107,11 @@
     </section>
   </div>
 
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    window.sptsAuthReady = requireRole(["MANAGER", "ADMINISTRATOR"]);
+  </script>
   <script src="script.js"></script>
 </body>
 </html>

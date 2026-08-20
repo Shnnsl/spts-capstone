@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In | SPTS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <section class="login-brand-panel" aria-label="SPTS product information">
+      <div class="login-brand-content">
+        <img
+          class="login-logo"
+          src="assets/Logo.png"
+          alt="SPTS logo"
+          onerror="this.hidden=true;"
+        />
+        <h1>Smart Production Tracking System</h1>
+        <p>Manufacturing Execution System</p>
+      </div>
+    </section>
+
+    <section class="login-form-panel">
+      <form id="loginForm" class="login-card" novalidate>
+        <div>
+          <p class="login-eyebrow">Secure access</p>
+          <h2>Sign in to your account</h2>
+          <p class="login-intro">Sign in to access your production dashboard.</p>
+        </div>
+
+        <div id="loginMessage" class="login-message" role="alert" aria-live="polite" hidden></div>
+
+        <label for="identifier">Username or Email</label>
+        <input
+          id="identifier"
+          name="identifier"
+          type="text"
+          autocomplete="username"
+          maxlength="50"
+          required
+        />
+
+        <label for="password">Password</label>
+        <div class="password-field">
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            maxlength="128"
+            required
+          />
+          <button id="togglePassword" class="password-toggle" type="button" aria-label="Show password">
+            Show
+          </button>
+        </div>
+
+        <div class="login-options">
+          <label class="remember-label" for="rememberMe">
+            <input id="rememberMe" name="rememberMe" type="checkbox" />
+            Remember Me
+          </label>
+        </div>
+
+        <button id="loginButton" class="login-submit" type="submit">
+          <span class="login-button-label">Sign In</span>
+          <span class="login-button-loading" hidden>Signing in…</span>
+        </button>
+      </form>
+
+      <footer class="login-footer">Version 3.0 · © 2026 SPTS</footer>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    const form = document.getElementById("loginForm");
+    const identifier = document.getElementById("identifier");
+    const password = document.getElementById("password");
+    const message = document.getElementById("loginMessage");
+    const submitButton = document.getElementById("loginButton");
+    const buttonLabel = submitButton.querySelector(".login-button-label");
+    const buttonLoading = submitButton.querySelector(".login-button-loading");
+
+    function showMessage(text) {
+      message.textContent = text;
+      message.hidden = !text;
+    }
+
+    function setLoading(isLoading) {
+      submitButton.disabled = isLoading;
+      identifier.disabled = isLoading;
+      password.disabled = isLoading;
+      buttonLabel.hidden = isLoading;
+      buttonLoading.hidden = !isLoading;
+    }
+
+    document.getElementById("togglePassword").addEventListener("click", (event) => {
+      const isHidden = password.type === "password";
+      password.type = isHidden ? "text" : "password";
+      event.currentTarget.textContent = isHidden ? "Hide" : "Show";
+      event.currentTarget.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      showMessage("");
+
+      if (!form.reportValidity()) return;
+
+      setLoading(true);
+      try {
+        const user = await login(identifier.value, password.value);
+        redirectByRole(user);
+      } catch (error) {
+        showMessage(error.message || "Invalid username or password.");
+        setLoading(false);
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      const savedMessage = localStorage.getItem(SPTS_AUTH_KEYS.loginMessage);
+      if (savedMessage) {
+        showMessage(savedMessage);
+        localStorage.removeItem(SPTS_AUTH_KEYS.loginMessage);
+      }
+
+      if (!isAuthenticated()) return;
+
+      setLoading(true);
+      try {
+        const user = await fetchCurrentUser();
+        redirectByRole(user);
+      } catch {
+        clearSession();
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
