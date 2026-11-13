@@ -164,6 +164,7 @@ The API documentation is available at `http://127.0.0.1:8000/docs` by default.
 .
 ├── app/                  # FastAPI routes, models, security, and persistence
 ├── frontend/             # Role-based browser dashboards and assets
+├── plc_client/           # Raspberry Pi sensor client with offline event queue
 ├── tests/                # API, OEE, downtime, dashboard, and RBAC tests
 ├── screenshots/          # Physical-system and application evidence
 ├── docs/diagrams/        # Architecture and engineering diagrams

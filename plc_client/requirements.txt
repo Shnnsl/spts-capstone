@@ -1,0 +1,6 @@
+requests>=2.31,<3
+python-dotenv>=1.0,<2
+gpiozero>=2.0,<3; platform_system == "Linux"
+
+# Development/testing
+pytest>=8,<10

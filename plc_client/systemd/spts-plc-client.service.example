@@ -1,0 +1,18 @@
+[Unit]
+Description=SPTS Raspberry Pi PLC Edge Client
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/spts-plc-client
+EnvironmentFile=/opt/spts-plc-client/.env
+ExecStart=/opt/spts-plc-client/.venv/bin/python /opt/spts-plc-client/main.py
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target
