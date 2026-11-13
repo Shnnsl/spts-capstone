@@ -4,6 +4,19 @@
 
 SPTS is a manufacturing application connected to a physical Raspberry Pi tabletop production prototype. It processes authenticated sensor events, detects downtime, calculates OEE and waste, and displays production data in role-based dashboards.
 
+Built by Nesil Sahin as the graduate capstone for an M.S. in Software Engineering at Grand Canyon University (2026).
+
+## What I Built
+
+- **Python / FastAPI backend** with 20+ REST endpoints for production events, downtime and approvals, supervisor notifications, trial configuration and status, and line, supervisor, and manager performance summaries.
+- **Data layer** with SQLAlchemy models and SQLite persistence for users, roles, production lines, events, downtime, and trial metrics.
+- **JWT authentication and role-based access control (RBAC)** for Line Workstation (Operator), Supervisor, Manager, and Administrator users.
+- **Raspberry Pi integration** that delivers sensor events through idempotent API processing: each event carries a UUID, and the Pi client keeps an offline queue with retries.
+- **Production logic** including validation, automatic downtime detection, production count and work-in-progress tracking, and Availability, Performance, Quality, and OEE calculations.
+- **Testing** with 80 automated tests: 57 for the API, OEE, downtime, dashboards, and RBAC, and 23 for the Pi client.
+
+**Stack:** Python, FastAPI, SQLAlchemy, SQLite, JWT, REST APIs, Raspberry Pi (`gpiozero`), HTML, CSS, JavaScript, pytest, Git.
+
 <p align="center"><img src="screenshots/spts%20physical%20tabletop%20system.jpg" alt="SPTS physical tabletop production system" width="900"></p>
 
 ## Overview
@@ -133,7 +146,7 @@ FastAPI publishes interactive Swagger UI and machine-readable OpenAPI documentat
 
 ## Testing and Validation
 
-The current automated SPTS baseline is **57 tests passed**.
+The API, OEE, downtime, dashboard, and RBAC suite passes **57 tests**. The Raspberry Pi client in `plc_client/` adds **23 more**, for **80 automated tests** in total.
 
 <p align="center"><img src="screenshots/spts%20automated%20test%20results.png" alt="SPTS automated test results showing 57 tests passed" width="820"></p>
 
@@ -155,6 +168,7 @@ Validation includes physical end-to-end Raspberry Pi operation, automatic downti
 3. Copy `.env.example` to `.env`, replace its placeholders, and set `SPTS_SEED_PASSWORD` if you plan to run `app/seed.py`.
 4. Start the API with `uvicorn app.main:app --reload`.
 5. Serve `frontend/` with a local static server and sign in through `login.html`.
+6. Run the tests with `pytest`. The Pi client has its own setup in [`plc_client/README.md`](plc_client/README.md).
 
 The API documentation is available at `http://127.0.0.1:8000/docs` by default.
 
